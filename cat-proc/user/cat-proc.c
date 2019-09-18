@@ -29,6 +29,7 @@ FILE *open_file(FILE *file,char name[],char *mode)
 int fill_arff_mes(FILE *out)
 {
     int ret = 1;
+    //需要往文件中写入的属性信息，需要自己手动写
     unsigned char *buffer = "@relation 'KDDTest'\n\n\
 @attribute 'VmPeak'  real\n\
 @attribute 'VmSize'   real\n\
@@ -134,7 +135,6 @@ int create_wekafile(char *s)
 //double total_t;
 int main(int argc,char *argv[])
 {
-    
     //检测命令行参数个数是否正确
     if(argc != 4) {
         printf("Usage: %s <数据集的文件名> <间隔微妙数> <提取数据的条数>\n",argv[0]);
