@@ -33,6 +33,7 @@ void show_weka_mem(struct seq_file *m, struct mm_struct *mm)
 	text = (PAGE_ALIGN(mm->end_code) - (mm->start_code & PAGE_MASK)) >> 10;
 	lib = (mm->exec_vm << (PAGE_SHIFT-10)) - text;
 	swap = get_mm_counter(mm, MM_SWAPENTS);
+	//写入想要打印的信息，注意锁,各种格式
 	seq_printf(m,
 		"%lu,"
 		"%lu,"
