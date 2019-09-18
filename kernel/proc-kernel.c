@@ -23,13 +23,6 @@ void show_weka_mem(struct seq_file *m, struct mm_struct *mm)
 	file = get_mm_counter(mm, MM_FILEPAGES);
 	shmem = get_mm_counter(mm, MM_SHMEMPAGES);
 
-	/*
-	 * Note: to minimize their overhead, mm maintains hiwater_vm and
-	 * hiwater_rss only when about to *lower* total_vm or rss.  Any
-	 * collector of these hiwater stats must therefore get total_vm
-	 * and rss too, which will usually be the higher.  Barriers? not
-	 * worth the effort, such snapshots can always be inconsistent.
-	 */
 	hiwater_vm = total_vm = mm->total_vm;
 	if (hiwater_vm < mm->hiwater_vm)
 		hiwater_vm = mm->hiwater_vm;
@@ -79,12 +72,8 @@ static int weka_show(struct seq_file *m, void *v)
 	//让p指向想要找的进程描述符
     p = &init_task;
     for_each_process(p)
-    {
-        if(p->pid == pid){ 
-        	//seq_printf(m, "founded\n");
+        if(p->pid == pid)
         	break;
-        }
-    }
 
 	//接下来开始寻找并打印内存方面的数据
     mm = get_task_mm(p);
@@ -111,13 +100,12 @@ const struct file_operations weka_fops = {
 
 static int __init proc_init(void)
 {
-    int ret;
+    int ret = -ENOMEM;
 	struct proc_dir_entry *pe;
 
 	proc_mkdir("zcy", NULL);
-
-	ret = -ENOMEM;
-	pe = proc_create("zcy/weka.arff",
+ 
+	pe = proc_create("zcy/weka",
 				S_IFREG | 0644,
 				NULL,
 				&weka_fops);
