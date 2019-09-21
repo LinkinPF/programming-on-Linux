@@ -122,7 +122,7 @@ void call_on_weka(int sig)
         }
     }
     if(num==file_num) {
-        printf("num:%d\n",num);
+        printf("共提取%d个进程内核空间数据\n\n",num);
         printf("提取已完成!\n");
         exit(0);
     }
@@ -131,8 +131,6 @@ void call_on_weka(int sig)
         if(thread[i].data.count>=0) {
             pthread_create(&(thread[i].t),NULL,write_weka,(void *)&((thread[i].data)));
             pthread_join(thread[i].t,NULL);
-        } else {
-            printf("%s已提取完成!\n",thread[i].data.name);
         }
     }
 
