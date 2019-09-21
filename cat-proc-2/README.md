@@ -1,4 +1,4 @@
-# 快速使用
+# 多进程内核空间数据提取工具-快速使用
 
 ## 内核模块的使用(kernel)：
 sudo insmod XXX.ko num=<监控的进程数量> pid=XXX,XXX,XXX,XXX    
