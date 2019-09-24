@@ -1,5 +1,6 @@
 //定义变量
 # include <pthread.h>
+# include <time.h>
 
 #define  FilePath "/proc/zcy"
 
@@ -7,7 +8,7 @@
 # define LEN 20
 char name[LEN];
 
-//文件个数/进程个数
+//文件个数/线程个数
 int file_num = 0;
 
 //存放生成的文件名
@@ -22,6 +23,7 @@ struct pthread_data {
     char * name;
     //未提取的数据数量
     int count;
+    void * data;
 };
 
 //一个线程

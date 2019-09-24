@@ -11,8 +11,10 @@
 
 # include "variable.h"
 
+#include <time.h>
 
 //字符串倒置
+//好玩
 char * strrev(char *str)
 {
    char *right = str;
@@ -80,7 +82,7 @@ void * write_weka(void * pthread)
     struct pthread_data * data = pthread;
     char path[LEN];
     FILE *in,*out;  
-    unsigned char buffer[255] = {'\0'};             //读proc文件存放的缓冲区
+    unsigned char buffer[256] = {'\0'};             //读proc文件存放的缓冲区
 
     sprintf(path,"%s%s","/proc/zcy/",data->name);
     //printf("name:%s  path:%s   count:%d\n",data->name, path, data->count);
@@ -214,7 +216,6 @@ void create_wekafile_all()
 
 int main(int argc,char *argv[])  
 {     
-
     //检测命令行参数个数是否正确
     if(argc != 3) {
         printf("Usage: %s <间隔微妙数> <提取数据的条数>\n",argv[0]);
