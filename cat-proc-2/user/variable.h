@@ -2,17 +2,23 @@
 # include <pthread.h>
 # include <time.h>
 
-#define  FilePath "/proc/zcy"
+#define  FilePath "/proc/weka"
 
 //存放想要生成的.arff文件名和路径名,加上.arff不超过20个字符
 # define LEN 20
 char name[LEN];
 
+//提取的数据类型
+int type = 0;
+
 //文件个数/线程个数
 int file_num = 0;
 
+//存放pid
+char * pid_name[10];
+
 //存放生成的文件名
-char * dir_name[10];
+char * arff_name[10];
 
 //提取数据的次数
 unsigned long num = 0;

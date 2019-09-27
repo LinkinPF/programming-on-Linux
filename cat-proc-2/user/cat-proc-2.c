@@ -6,12 +6,13 @@
 # include <stdlib.h>
 # include <pthread.h>
 # include <ctype.h>
-
 # include "dirent.h"
 
 # include "variable.h"
+//# include "fill_arff.c"
 
-#include <time.h>
+# include <time.h>
+
 
 //字符串倒置
 //好玩
@@ -32,6 +33,43 @@ char * strrev(char *str)
    return(str);
 }
 
+// 将字符数组 s 颠倒
+void reverse(char *s,int length ) {
+    int mid = length / 2;
+    for (int i = 0; i < mid; i++) {
+        char t = s[i];
+        s[i] = s[length - i-1];
+        s[length - i -1] = t;
+    }
+}
+
+// 计算整数 n 的位数
+int count(int n)
+{
+    int t = 0;
+    do {
+        n /= 10;  
+        t++;
+    } while (n > 0);
+    return t;
+}
+
+//整数转字符串
+char* itoaa(int n)   // 1234 
+{
+    int num =count(n);
+    char * chs = (char *)malloc(sizeof(char)*(num+1));
+    int i = 0,t;
+    do {
+        t= n % 10;
+        chs[i++] = t+'0';
+        n /= 10;
+    } while (n > 0);
+    reverse(chs, num);// 逆转，将 4321 逆转成 1234
+    chs[num] = '\0';
+    return chs;
+}
+
 
 
 //打开或者创建一个文件
@@ -47,7 +85,8 @@ FILE *open_file(FILE *file,char *name,char *mode)
 
 
 //向arff文件写入非数据部分
-int fill_arff_mes(FILE *out)
+//对应类型1，写入内存信息
+extern int fill_arff_mes_mm(FILE *out)
 {
     int ret = 1;
     //需要往文件中写入的属性信息，需要自己手动写
@@ -77,35 +116,122 @@ int fill_arff_mes(FILE *out)
     return ret;
 }
 
+//向arff文件写入非数据部分
+//对应类型2，写入stat信息
+extern int fill_arff_mes_stat(FILE *out)
+{
+    int ret = 1;
+    //需要往文件中写入的属性信息，需要自己手动写
+    unsigned char *buffer = "@relation 'Test'\n\n\
+@attribute 'pid'  real\n\
+@attribute 'comm'   { HeapSort,MergeSort,QuickSort }\n\
+@attribute 'task_state'  {    }}\n\
+@attribute 'ppid'  real\n\
+@attribute 'pgid'  real\n\
+@attribute 'sid'  real\n\
+@attribute 'tty_nr'  real\n\
+@attribute 'tty_pgrp'  real\n\
+@attribute 'task_flags'  real\n\
+@attribute 'min_flt'  real\n\
+@attribute 'cmin_flt'  real\n\
+@attribute 'maj_flt'  real\n\
+@attribute 'cmaj_flt'  real\n\
+@attribute 'utime'  real\n\
+@attribute 'stime'   real\n\
+@attribute 'cutime'  real\n\
+@attribute 'cstime'  real\n\
+@attribute 'priority'  real\n\
+@attribute 'nice'  real\n\
+@attribute 'num_threads'  real\n\
+@attribute 'it_real_value'   real\n\
+@attribute 'start_time'  real\n\
+@attribute 'vsize'   real\n\
+@attribute 'rss'  real\n\
+@attribute 'rlim'  real\n\
+@attribute 'start_code'  real\n\
+@attribute 'end_code'  real\n\
+@attribute 'start_stack'  real\n\
+@attribute 'kstkesp'   real\n\
+@attribute 'kstkeip'   real\n\
+@attribute 'pendingsig'  real\n\
+@attribute 'block_sig'   real\n\
+@attribute 'sigign'  real\n\
+@attribute 'sigcatch'  real\n\
+@attribute 'wchan'  real\n\
+@attribute 'nswap'  real\n\
+@attribute 'cnswap'  real\n\
+@attribute 'exit_signal'   real\n\
+@attribute 'task_cpu'  real\n\
+@attribute 'task_rt_priority'   real\n\
+@attribute 'task_policy'   real\n\
+@data\n";
+
+    if(fputs(buffer, out) == EOF) {
+        printf("out文件写入非数据部分失败!\n");
+        ret = 0;
+    }
+
+    return ret;
+}
+
+
+
+
+//对应读取内存信息
 void * write_weka(void * pthread)
 {
-    struct pthread_data * data = pthread;
-    char path[LEN];
-    FILE *in,*out;  
-    unsigned char buffer[256] = {'\0'};             //读proc文件存放的缓冲区
+    // clock_t start,end;
+    // double total;
+    // start = clock();
 
-    sprintf(path,"%s%s","/proc/zcy/",data->name);
-    //printf("name:%s  path:%s   count:%d\n",data->name, path, data->count);
+    struct pthread_data * data = pthread;
+    char proc_path[LEN];
+    char user_path[LEN];
+    FILE *in,*out;  
+    unsigned char buffer[512] = {'\0'};             //读proc文件存放的缓冲区
+
+    if(1 == type) {
+        sprintf(proc_path,"%s%s","/proc/weka/",data->name);
+        //user_path = data->name;
+    } else if(2 == type) {
+        sprintf(proc_path,"%s%s%s","/proc/",data->name,"/stat");
+        sprintf(user_path,"%s%s",data->name,".arff");
+    }
+    //printf("name:%s  proc_path:%s   count:%d\n",data->name, proc_path, data->count);
 
     if((data->count)-- >= 1)
     {
-        in = open_file(in,path,"r");
-        out = open_file(out,data->name,"a");
+        in = open_file(in,proc_path,"r");
+        out = open_file(out,user_path,"a");
 
-        if(fgets(buffer,255,in) == NULL) {          //从fp中读取一行,存在buffer中,读取的最大字符数是255,包括包括空字符\0 
+        if(fgets(buffer,512,in) == NULL) {          //从fp中读取一行,存在buffer中,读取的最大字符数是255,包括包括空字符\0 
             printf("in文件读入失败!\n");  //调用fputs函数写入文件，不管成功或失败都会返回一条信息。
             exit(1);
         }
-
-        if(fputs(buffer,out) == EOF) {              //调用fputs函数写入文件，不管成功或失败都会返回一条信息。
+        //第二种是直接读取proc本身就有的文件，需要将空格替换成,
+        char s[512]={'\0'};
+        strcpy(s,buffer);
+        for(int i=0;i<strlen(s);i++) {
+            if(s[i]=='\0')
+                break;
+            if(s[i]==' ') {
+                s[i]=',';
+            }
+        }
+        if(fputs(s,out) == EOF) {              //调用fputs函数写入文件，不管成功或失败都会返回一条信息。
             printf("out文件写入数据部分失败!\n");
             exit(1);
         }
+        //fputs("\n",out);
         fclose(in); 
         fclose(out);
     } else {
         return NULL;
     }
+
+    // end = clock();
+    // total=(double)(end-start)/CLOCKS_PER_SEC;
+    // printf("%f\n",total);
 
     return NULL;
 }
@@ -114,6 +240,7 @@ void * write_weka(void * pthread)
 
 void call_on_weka(int sig)
 {
+
     if(sig != SIGALRM)  
         return;
     int num=0;
@@ -132,6 +259,7 @@ void call_on_weka(int sig)
     for(int i=0; i<file_num; i++) {
         if(thread[i].data.count>=0) {
             pthread_create(&(thread[i].t),NULL,write_weka,(void *)&((thread[i].data)));
+            //printf("call_on_weka:%dthread:%s\n",i,thread[i].data.name);
             pthread_join(thread[i].t,NULL);
         }
     }
@@ -168,9 +296,14 @@ int create_wekafile(char * file)
     FILE *out;                                  //指向读取和写入文件的指针
     
     out = open_file(out,file,"w");
-    ret = fill_arff_mes(out);   
-    fclose(out); 
 
+    if(1 == type ) {
+        ret = fill_arff_mes_mm(out); 
+    } else if(2 == type) {
+        ret = fill_arff_mes_stat(out);
+    }
+      
+    fclose(out); 
     return ret;
 }
 
@@ -183,6 +316,8 @@ void create_wekafile_all()
     int i = 0;
     int filesize = 0;  
     DIR *dir = NULL;  
+    char  *path; 
+    //char angry[LEN];
     struct dirent *entry;
 
     //开始创建文件
@@ -195,10 +330,25 @@ void create_wekafile_all()
             if(!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
                 continue;
 
-            dir_name[i] = entry->d_name;
-            i++;
+            //根据数据类型做不同的处理，使用局部变量path的
+            if(1 == type) {
+                path = entry->d_name;
+                arff_name[i] = path;
+            } else if(2 == type) {
+                arff_name[i] = itoaa(atoi(entry->d_name));
 
-            if(!create_wekafile( entry->d_name )) {
+                path = entry->d_name;
+                sprintf(path,"%s%s",path,".arff");
+                //第二种情况没用arff_name[i]
+                //arff_name[i] = path;
+
+                //printf("arff_name:%s\n",arff_name[i]);
+                //printf("arff_name:%s\n",arff_name[i]);
+            }
+            i++;
+            //printf("create_wekafile_all  i:%d\n",i);
+
+            if(!create_wekafile( path )) {
                 perror("创建arff文件失败\n");
                 exit(1);
             }
@@ -217,31 +367,35 @@ void create_wekafile_all()
 int main(int argc,char *argv[])  
 {     
     //检测命令行参数个数是否正确
-    if(argc != 3) {
-        printf("Usage: %s <间隔微妙数> <提取数据的条数>\n",argv[0]);
+    if(argc != 4) {
+        printf("Usage: %s <提取数据类型：1-内存，2-stat> <间隔微妙数> <提取数据的条数>\n",argv[0]);
         exit(1);
     }
 
     //设置信号处理函数
     signal(SIGALRM,call_on_weka);
 
+    //保存数据类型
+    type = atoi(argv[1]);
+
     //初始化要提取的数据数量
-    num = atoi(argv[2]);
+    num = atoi(argv[3]);
 
     create_wekafile_all();
 
+    //初始化线程数据
     for(int i=0; i<file_num; i++) {
-        (thread[i].data).name = dir_name[i];
-        (thread[i].data).count = num;
+            (thread[i].data).name = arff_name[i];
+            (thread[i].data).count = num;
     }
 
     //初始化定时器
-    if(set_ticker(atoi(argv[1])) == -1) {
+    if(set_ticker(atoi(argv[2])) == -1) {
          perror("初始化定时器失败\n");
     } else {
         //开始提取数据
         printf("成功! 开始提取数据\n\n");
-        printf("当前每隔 %f s提取一次数据\n\n",atoi(argv[1])/1000000.0);
+        printf("当前每隔 %f s提取一次数据\n\n",atoi(argv[2])/1000000.0);
         //printf("按回车结束数据提取\n\n");
         while(1) {
             pause();
